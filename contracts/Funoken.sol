@@ -18,7 +18,7 @@ contract Funoken is ERC721URIStorage {
     }
     TokenBid newBid;
      
-    mapping (uint256 => TokenBid) idToBid;
+    mapping (uint256 => TokenBid) public idToBid;
     
     modifier upForSale (uint256 _itemId) {
         require(idToBid[_itemId].forSale);
@@ -31,23 +31,23 @@ contract Funoken is ERC721URIStorage {
     
     constructor() ERC721("Funoken", "FTK") {}
     
-    function mintToken(address recipient, string memory tokenURI) public returns (uint256) {
+    function mintToken(string memory tokenURI) external returns (uint256) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        _mint(recipient, newItemId);
+        _mint(msg.sender, newItemId);
         _setTokenURI(newItemId, tokenURI);
         newBid = TokenBid(false, false, 0, address(0), 0);
         idToBid[newItemId] = newBid;
         return newItemId;
     }
     
-    function auction(uint256 itemId, uint256 amount) public onlyOwner(itemId) {
+    function auction(uint256 itemId, uint256 amount) external onlyOwner(itemId) {
         idToBid[itemId].forSale = true;
         idToBid[itemId].highestBid = amount;
         idToBid[itemId].auctionStart = block.timestamp;
     }
     
-    function bid(uint256 itemId) public payable upForSale(itemId){
+    function bid(uint256 itemId) external payable upForSale(itemId){
         require(msg.value> idToBid[itemId].highestBid, "Bid must be higher"); 
         require(msg.sender != ownerOf(itemId));
         
@@ -59,7 +59,7 @@ contract Funoken is ERC721URIStorage {
         idToBid[itemId].beenBid = true;
     }
     
-    function endAuction(uint256 itemId) public upForSale(itemId){
+    function endAuction(uint256 itemId) external upForSale(itemId){
         require(block.timestamp > idToBid[itemId].auctionStart + 86400 seconds, "Auction time has not ended yet");
         
         if (idToBid[itemId].beenBid){
@@ -70,6 +70,6 @@ contract Funoken is ERC721URIStorage {
         idToBid[itemId].beenBid = false;
         idToBid[itemId].highestBid = 0;
         idToBid[itemId].highestBidder = address(0);    
-
+        idToBid[itemId].auctionStart = 0;
     }
 }
